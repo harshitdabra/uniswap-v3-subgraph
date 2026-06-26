@@ -1,0 +1,143 @@
+type Token @entity {
+  id: ID!
+    symbol: String!
+      name: String!
+        decimals: BigInt!
+          totalSupply: BigInt!
+            derivedETH: BigDecimal!
+              poolCount: BigInt!
+                txCount: BigInt!
+                  totalValueLocked: BigDecimal!
+                    totalValueLockedUSD: BigDecimal!
+                      feesUSD: BigDecimal!
+                        volume: BigDecimal!
+                          volumeUSD: BigDecimal!
+                            untrackedVolumeUSD: BigDecimal!
+                            }
+
+                            type Pool @entity {
+                              id: ID!
+                                createdAtTimestamp: BigInt!
+                                  createdAtBlockNumber: BigInt!
+                                    token0: Token!
+                                      token1: Token!
+                                        feeTier: BigInt!
+                                          liquidity: BigInt!
+                                            sqrtPrice: BigInt!
+                                              token0Price: BigDecimal!
+                                                token1Price: BigDecimal!
+                                                  tick: BigInt
+                                                    observationIndex: BigInt!
+                                                      volumeToken0: BigDecimal!
+                                                        volumeToken1: BigDecimal!
+                                                          volumeUSD: BigDecimal!
+                                                            untrackedVolumeUSD: BigDecimal!
+                                                              feesUSD: BigDecimal!
+                                                                txCount: BigInt!
+                                                                  collectedFeesToken0: BigDecimal!
+                                                                    collectedFeesToken1: BigDecimal!
+                                                                      collectedFeesUSD: BigDecimal!
+                                                                        totalValueLockedToken0: BigDecimal!
+                                                                          totalValueLockedToken1: BigDecimal!
+                                                                            totalValueLockedETH: BigDecimal!
+                                                                              totalValueLockedUSD: BigDecimal!
+                                                                                swaps: [Swap!]! @derivedFrom(field: "pool")
+                                                                                  mints: [Mint!]! @derivedFrom(field: "pool")
+                                                                                    burns: [Burn!]! @derivedFrom(field: "pool")
+                                                                                    }
+
+                                                                                    type Transaction @entity {
+                                                                                      id: ID!
+                                                                                        blockNumber: BigInt!
+                                                                                          timestamp: BigInt!
+                                                                                            gasUsed: BigInt!
+                                                                                              gasPrice: BigInt!
+                                                                                                mints: [Mint!]! @derivedFrom(field: "transaction")
+                                                                                                  burns: [Burn!]! @derivedFrom(field: "transaction")
+                                                                                                    swaps: [Swap!]! @derivedFrom(field: "transaction")
+                                                                                                      flashes: [Flash!]! @derivedFrom(field: "transaction")
+                                                                                                      }
+                                                                                                      
+                                                                                                      type Swap @entity {
+                                                                                                        id: ID!
+                                                                                                          transaction: Transaction!
+                                                                                                            timestamp: BigInt!
+                                                                                                              pool: Pool!
+                                                                                                                token0: Token!
+                                                                                                                  token1: Token!
+                                                                                                                    sender: Bytes!
+                                                                                                                      recipient: Bytes!
+                                                                                                                        origin: Bytes!
+                                                                                                                          amount0: BigDecimal!
+                                                                                                                            amount1: BigDecimal!
+                                                                                                                              amountUSD: BigDecimal!
+                                                                                                                                sqrtPriceX96: BigInt!
+                                                                                                                                  tick: BigInt!
+                                                                                                                                    logIndex: BigInt
+                                                                                                                                    }
+                                                                                                                                    
+                                                                                                                                    type Mint @entity {
+                                                                                                                                      id: ID!
+                                                                                                                                        transaction: Transaction!
+                                                                                                                                          timestamp: BigInt!
+                                                                                                                                            pool: Pool!
+                                                                                                                                              token0: Token!
+                                                                                                                                                token1: Token!
+                                                                                                                                                  owner: Bytes!
+                                                                                                                                                    sender: Bytes
+                                                                                                                                                      origin: Bytes!
+                                                                                                                                                        amount: BigInt!
+                                                                                                                                                          amount0: BigDecimal!
+                                                                                                                                                            amount1: BigDecimal!
+                                                                                                                                                              amountUSD: BigDecimal
+                                                                                                                                                                tickLower: BigInt!
+                                                                                                                                                                  tickUpper: BigInt!
+                                                                                                                                                                    logIndex: BigInt
+                                                                                                                                                                    }
+                                                                                                                                                                    
+                                                                                                                                                                    type Burn @entity {
+                                                                                                                                                                      id: ID!
+                                                                                                                                                                        transaction: Transaction!
+                                                                                                                                                                          pool: Pool!
+                                                                                                                                                                            token0: Token!
+                                                                                                                                                                              token1: Token!
+                                                                                                                                                                                timestamp: BigInt!
+                                                                                                                                                                                  owner: Bytes
+                                                                                                                                                                                    origin: Bytes!
+                                                                                                                                                                                      amount: BigInt!
+                                                                                                                                                                                        amount0: BigDecimal!
+                                                                                                                                                                                          amount1: BigDecimal!
+                                                                                                                                                                                            amountUSD: BigDecimal
+                                                                                                                                                                                              tickLower: BigInt!
+                                                                                                                                                                                                tickUpper: BigInt!
+                                                                                                                                                                                                  logIndex: BigInt
+                                                                                                                                                                                                  }
+                                                                                                                                                                                                  
+                                                                                                                                                                                                  type Flash @entity {
+                                                                                                                                                                                                    id: ID!
+                                                                                                                                                                                                      transaction: Transaction!
+                                                                                                                                                                                                        timestamp: BigInt!
+                                                                                                                                                                                                          pool: Pool!
+                                                                                                                                                                                                            sender: Bytes!
+                                                                                                                                                                                                              recipient: Bytes!
+                                                                                                                                                                                                                amount0: BigDecimal!
+                                                                                                                                                                                                                  amount1: BigDecimal!
+                                                                                                                                                                                                                    amountUSD: BigDecimal!
+                                                                                                                                                                                                                      amount0Paid: BigDecimal!
+                                                                                                                                                                                                                        amount1Paid: BigDecimal!
+                                                                                                                                                                                                                          logIndex: BigInt
+                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                          
+                                                                                                                                                                                                                          type Factory @entity {
+                                                                                                                                                                                                                            id: ID!
+                                                                                                                                                                                                                              poolCount: BigInt!
+                                                                                                                                                                                                                                txCount: BigInt!
+                                                                                                                                                                                                                                  totalVolumeUSD: BigDecimal!
+                                                                                                                                                                                                                                    totalVolumeETH: BigDecimal!
+                                                                                                                                                                                                                                      totalFeesUSD: BigDecimal!
+                                                                                                                                                                                                                                        totalFeesETH: BigDecimal!
+                                                                                                                                                                                                                                          untrackedVolumeUSD: BigDecimal!
+                                                                                                                                                                                                                                            totalValueLockedUSD: BigDecimal!
+                                                                                                                                                                                                                                              totalValueLockedETH: BigDecimal!
+                                                                                                                                                                                                                                                owner: ID!
+                                                                                                                                                                                                                                                }
