@@ -1,91 +1,45 @@
 # Uniswap V3 Subgraph
 
-A production-ready subgraph indexing Uniswap V3 on Ethereum mainnet using [The Graph Protocol](https://thegraph.com). Tracks pools, swaps, liquidity events, flash loans, and token data in real time.
+A subgraph indexing Uniswap V3 activity on Ethereum mainnet through The Graph. It tracks pools, swaps, mints, burns, flash loans and token data in real time.
 
-## Architecture
+## How it works
 
-```
-uniswap-v3-subgraph/
-|-- abis/
-|   |-- ERC20.json              # Standard ERC-20 ABI (name, symbol, decimals, totalSupply)
-|   |-- UniswapV3Factory.json   # Factory ABI (PoolCreated event)
-|   +-- UniswapV3Pool.json      # Pool ABI (Swap, Mint, Burn, Flash, Collect, Initialize)
-|-- src/
-|   +-- mappings/
-|       |-- factory.ts          # Handles PoolCreated, creates Pool + Token entities
-|       |-- pool.ts             # Handles all pool events (Swap, Mint, Burn, Flash, Collect)
-|       +-- utils/
-|           |-- constants.ts    # FACTORY_ADDRESS, ZERO_BI, ZERO_BD, token whitelist
-|           |-- token.ts        # ERC20 contract calls (symbol, name, decimals, totalSupply)
-|           +-- pricing.ts      # sqrtPriceX96 conversion, decimal math helpers
-|-- schema.graphql              # GraphQL schema: Token, Pool, Swap, Mint, Burn, Flash, Transaction
-|-- subgraph.yaml               # Manifest: Factory datasource + Pool template
-+-- package.json                # graph-cli + graph-ts dependencies
-```
+The Factory contract is the static data source. When a new pool gets created, `handlePoolCreated` spins up a Pool template to start indexing that pool's own events, so each pool ends up with its own set of listeners. Everything lands in a Postgres backed store through Graph Node and you query it over GraphQL.
 
-## Entities
+Layout wise, the ABIs live in `abis/`, the actual event handlers (`factory.ts`, `pool.ts`) are in `src/mappings/`, and `src/utils/` has the constants, token helpers and pricing math. Entities are defined in `schema.graphql`, and `subgraph.yaml` is the manifest tying it all together.
 
-| Entity | Description |
-|--------|-------------|
-| Factory | Global Uniswap V3 stats: pool count, total volume, TVL |
-| Pool | Individual liquidity pool: token pair, fee tier, liquidity, price, volume |
-| Token | ERC-20 token metadata and aggregated stats (volume, TVL, fees) |
-| Swap | Individual swap event with amounts, price, tick, sender, recipient |
-| Mint | Liquidity provision event: tick range, amounts, owner |
-| Burn | Liquidity removal event: tick range, amounts, owner |
-| Flash | Flash loan event: amounts borrowed and fees paid |
-| Transaction | Block-level transaction wrapper (block number, timestamp, gas) |
+Entities tracked: Factory (global stats), Pool, Token, Swap, Mint, Burn, Flash, and Transaction.
 
-## Contract Details
-
-| Parameter | Value |
-|-----------|-------|
-| Network | Ethereum Mainnet |
-| Factory Address | `0x1F98431c8aD98523631AE4a59f267346ea31F984` |
-| Start Block | `12369621` (Uniswap V3 deployment) |
-| Spec Version | `0.0.5` |
-| API Version | `0.0.7` |
+Deployed on Ethereum mainnet starting from block 12369621 (Uniswap V3's deployment block), factory address `0x1F98431c8aD98523631AE4a59f267346ea31F984`.
 
 ## Setup
 
-**Prerequisites:** Node.js >= 16, `@graphprotocol/graph-cli`
+Needs Node 16+ and `@graphprotocol/graph-cli`.
 
-```bash
+```
 git clone https://github.com/harshitdabra/uniswap-v3-subgraph.git
 cd uniswap-v3-subgraph
 npm install
-```
-
-**Generate types from ABI + schema:**
-
-```bash
 npm run codegen
-```
-
-**Build (compiles to WASM):**
-
-```bash
 npm run build
 ```
 
-**Deploy to The Graph Studio:**
+To deploy to The Graph Studio:
 
-```bash
+```
 graph auth --studio <YOUR_DEPLOY_KEY>
 npm run deploy
 ```
 
-**Local development with Graph Node:**
+Or run it locally against a Graph Node with docker-compose:
 
-```bash
+```
 docker-compose up -d
 npm run create-local
 npm run deploy-local
 ```
 
-## Sample Queries
-
-**Top pools by TVL:**
+## Example query
 
 ```graphql
 {
@@ -96,74 +50,8 @@ npm run deploy-local
     feeTier
     totalValueLockedUSD
     volumeUSD
-    txCount
   }
 }
 ```
 
-**Recent swaps on a pool:**
-
-```graphql
-{
-  swaps(
-    first: 20
-    orderBy: timestamp
-    orderDirection: desc
-    where: { pool: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8" }
-  ) {
-    id
-    timestamp
-    sender
-    recipient
-    amount0
-    amount1
-    amountUSD
-  }
-}
-```
-
-**Factory global stats:**
-
-```graphql
-{
-  factories(first: 1) {
-    poolCount
-    txCount
-    totalVolumeUSD
-    totalValueLockedUSD
-    totalFeesUSD
-  }
-}
-```
-
-**Token volume and fees:**
-
-```graphql
-{
-  tokens(first: 10, orderBy: volumeUSD, orderDirection: desc) {
-    id
-    symbol
-    name
-    decimals
-    volumeUSD
-    feesUSD
-    totalValueLockedUSD
-    poolCount
-  }
-}
-```
-
-## Tech Stack
-
-- [The Graph Protocol](https://thegraph.com) - decentralized indexing infrastructure
-- AssemblyScript - typed superset of TypeScript compiled to WASM
-- GraphQL - query language for the indexed data
-- Ethereum Mainnet - Uniswap V3 smart contracts
-
-## How It Works
-
-The `Factory` contract is the static data source. When a new pool is created, `handlePoolCreated` dynamically spins up a `Pool` template instance to start indexing that pool's events. Each pool gets its own event listeners. All data is stored in a PostgreSQL-compatible store via Graph Node and queryable via GraphQL.
-
-## License
-
-MIT - built by [Harshit Dabra](https://github.com/harshitdabra)
+MIT licensed.
